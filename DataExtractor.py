@@ -5,7 +5,7 @@ from shutil import copyfile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-DATA_PATH = "/home/evgeny/code_projects/cheat_detector_model/data/"
+DATA_PATH = "/home/evgeny/code_projects/cheat_detector_model/data/CheatGameLogs"
 DeceptionDB_path = "/home/evgeny/code_projects/cheat_detector_model/data/DeceptionDB/"
 DeceptionDB_csv_path = "/home/evgeny/code_projects/cheat_detector_model/data/DeceptionDB/description.csv"
 
@@ -18,11 +18,14 @@ def main():
     with open(DeceptionDB_csv_path, 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(["file_name",'IsTrueClaim'])
-        for audio_filename in Path(DATA_PATH).glob('*/*/*/*/*/*.wav'):
+        for audio_filename in Path(DATA_PATH).glob('*/*/*/*/*.wav'):
             file_counter+=1
             description_path = Path(Path(audio_filename).parent).glob('*.xml').__next__()
             turn_attrib = ParsXML(description_path)
-            spamwriter.writerow(["claim_" + str(file_counter) + ".wav",turn_attrib['IsTrueClaim']])
+            try:
+                spamwriter.writerow(["claim_" + str(file_counter) + ".wav",turn_attrib['IsTrueClaim']])
+            except:
+                print (turn_attrib)
             copyfile(audio_filename, DeceptionDB_path + "claim_" +  str(file_counter) + ".wav")
 
 

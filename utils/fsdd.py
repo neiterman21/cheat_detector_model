@@ -53,7 +53,6 @@ class FSDD_:
 
         if data_dir is None:
             data_dir = os.path.dirname(__file__) + '/../spectrograms'
-            print(data_dir)
 
         file_paths = [f for f in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, f)) and '.png' in f]
 
@@ -62,26 +61,34 @@ class FSDD_:
 
         for file_name in file_paths:
             label = cls.get_lable(file_name)
+            if label is None:
+                continue
             spectrogram = scipy.ndimage.imread(data_dir + '/' + file_name, flatten=True).flatten()
             spectrograms.append(spectrogram)
             labels.append(label)
 
+        print("total num of entris is: " + str(FSDD.num_of_entries))
         return spectrograms, np.array(labels)
 
 class FSDD(FSDD_):
     import read_data
-    csv_file = "../data/recordings/description.csv"
+    csv_file = "data/DeceptionDB/description.csv"
     data_labels = read_data.parst_data_labels(csv_file)
     del read_data
-
+    num_of_entries = 0
     def __init__(self, data_dir ):
         super(FSDD, self).__init__(data_dir)
 
     #overide
     @staticmethod
     def get_lable(file_name):
+        print(file_name)
         entry = next((x for x in FSDD.data_labels if x["filename"].replace("wav","png") == file_name) , None)
+        if entry is None:
+            return
+        FSDD.num_of_entries = FSDD.num_of_entries + 1
         if entry["isliestatment"] == "True":    # [is lie , is true]
             return [0,1]
         else:
             return [1,0]
+

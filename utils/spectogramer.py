@@ -52,7 +52,7 @@ def dir_to_spectrogram(audio_dir, spectrogram_dir, spectrogram_dimensions=(64, 6
 
 
 if __name__ == '__main__':
-    audio_dir = "/home/evgeny/code_projects/cheat_detector_model/data/recordings/"
+    audio_dir = "/home/evgeny/code_projects/cheat_detector_model/data/DeceptionDB/"
     spectrogram_dir = "/home/evgeny/code_projects/cheat_detector_model/data/spectrograms/"
     trim_silence_dir(audio_dir)
     dir_to_spectrogram(audio_dir, spectrogram_dir)
