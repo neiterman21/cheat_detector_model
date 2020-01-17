@@ -68,6 +68,8 @@ class FSDD_:
             labels.append(label)
 
         print("total num of entris is: " + str(FSDD.num_of_entries))
+        print("total num of true statments is: " + str(FSDD.true_rec))
+        print("total num of false statments is: " + str(FSDD.false_rec))
         return spectrograms, np.array(labels)
 
 class FSDD(FSDD_):
@@ -76,19 +78,22 @@ class FSDD(FSDD_):
     data_labels = read_data.parst_data_labels(csv_file)
     del read_data
     num_of_entries = 0
+    true_rec = 0
+    false_rec = 0
     def __init__(self, data_dir ):
         super(FSDD, self).__init__(data_dir)
 
     #overide
     @staticmethod
     def get_lable(file_name):
-        print(file_name)
         entry = next((x for x in FSDD.data_labels if x["filename"].replace("wav","png") == file_name) , None)
         if entry is None:
             return
         FSDD.num_of_entries = FSDD.num_of_entries + 1
         if entry["isliestatment"] == "True":    # [is lie , is true]
+            FSDD.true_rec = FSDD.true_rec + 1
             return [0,1]
         else:
+            FSDD.false_rec = FSDD.false_rec + 1
             return [1,0]
 

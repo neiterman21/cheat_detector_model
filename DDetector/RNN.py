@@ -5,20 +5,10 @@ from tensorflow.contrib import rnn
 from  Datakeeper import *
 from colorama import Fore, Back, Style
 from sklearn.model_selection import train_test_split
-#import read_data as rd
 
-# Import MNIST data
-#from tensorflow.examples.tutorials.mnist import input_data
-#mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
-
-'''
-To classify images using a recurrent neural network, we consider every image
-row as a sequence of pixels. Because MNIST image shape is 28*28px, we will then
-handle 28 sequences of 28 steps for every sample.
-'''
 
 # Training Parameters
-learning_rate = 0.001
+learning_rate = 0.0001
 training_steps = 10000
 batch_size = 64
 display_step = 5
@@ -41,6 +31,9 @@ biases = {
     'out': tf.Variable(tf.random_normal([num_classes]))
 }
 accuracy_history = []
+
+def sortFirt(val):
+    return val[0]
 
 def RNN(x, weights, biases):
 
@@ -75,7 +68,25 @@ def configure_RNN():
 
     return   train_op ,accuracy , loss_op, prediction
 
-def run_RNN( train_op ,accuracy , loss_op, train_data ,test_data,prediction, training_epochs = 10):
+def getPrefMat(test_y,pred , m):
+    prefmat = m
+    for line in zip(test_y,pred):
+        pred_lie = False
+        act_lie = False
+        if line[1][0] > 0.5 : pred_lie = True
+        if line[0][0] > 0.5 : act_lie = True
+        if (act_lie and pred_lie):
+            prefmat[1][1] = prefmat[1][1] +1
+        if not act_lie and not pred_lie:
+            prefmat[0][0] = prefmat[0][0] +1
+        if (act_lie and not pred_lie):
+            prefmat[1][0] = prefmat[1][0] +1
+        if (not act_lie and pred_lie):
+            prefmat[0][1] = prefmat[0][1] +1
+
+    return prefmat
+
+def run_RNN( train_op ,accuracy , loss_op, prediction, train_data ,test_data , training_epochs = 10):
     # Initialize the variables (i.e. assign their default value)
     init = tf.global_variables_initializer()
     test_acurecy = 0
@@ -90,7 +101,9 @@ def run_RNN( train_op ,accuracy , loss_op, train_data ,test_data,prediction, tra
             # Loop over all batches
             for i in range(total_batch):
                 batch_x, batch_y = train_data.getNextBatch()
+                print(batch_x.shape)
                 sess.run(train_op, feed_dict={X: batch_x, Y: batch_y})
+
                 if epoc % display_step == 0 or epoc == 1:
                     # Calculate batch loss and accuracy
                     loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x,Y: batch_y})
@@ -100,37 +113,40 @@ def run_RNN( train_op ,accuracy , loss_op, train_data ,test_data,prediction, tra
 
 
             if epoc % display_step == 0 or epoc == 1:
-                test_x, test_y = test_data.getNextBatch()
-                test_x = test_x.reshape((-1, timesteps, num_input))
-                best_test_acureccy = max(test_acurecy , best_test_acureccy)
-                test_acurecy, pred = sess.run([accuracy, prediction], feed_dict={X: test_x, Y: test_y})
-                print("Testing Accuracy:", test_acurecy)
-                accuracy_history.append(test_acurecy)
-                for line in zip(test_y,pred):
-                    clr = Fore.RED
-                    pred_lie = False
-                    act_lie = False
-                    if line[1][0] > 0.5 : pred_lie = True
-                    if line[0][0] > 0.5 : act_lie = True
-                    if (act_lie and pred_lie) or (not act_lie and not pred_lie):
-                        clr = Fore.GREEN
-                    print(clr + "pred: " + str(line[1]) + " actual: " + str(line[0]))
-                print(Style.RESET_ALL)
-                if best_test_acureccy > test_acurecy + 0.2:
-                    print("Accuracy starting to decent stoping traning")
-                    break
+                m = [[0,0],[0,0]]
+                total_batch_test = test_data.getNumOfBatches()
+                for i in range(total_batch_test):
+                    test_x, test_y = test_data.getNextBatch()
+                    best_test_acureccy = max(test_acurecy , best_test_acureccy)
+                    test_acurecy, pred = sess.run([accuracy, prediction], feed_dict={X: test_x, Y: test_y})
+                    m = getPrefMat(test_y,pred , m)
+                #test_x = test_x.reshape((-1, timesteps, num_input))
+
+                print("Epoc: " ,epoc , " Testing Accuracy:", test_acurecy)
+
+                print(m)
+                persition = m[1][1]/(m[1][1] + m[1][0])
+                accuracy_history.append([test_acurecy , m , persition])
+                #if test_acurecy > 0.64:
+                #    print("Accuracy reched")
+                #    break
 
         print("Optimization Finished!")
 
         # Calculate accuracy for 128 mnist test images
-        test_len = 128
-        test_x, test_y = test_data.getNextBatch()
-        test_x = test_x.reshape((-1, timesteps, num_input))
+        #test_x, test_y = test_data.getNextBatch()
+        #test_x = test_x.reshape((-1, timesteps, num_input))
 
-        print("Testing Accuracy:", \
-            sess.run(accuracy, feed_dict={X: test_x, Y: test_y}))
+        #print("Testing Accuracy:", \
+        #    sess.run(accuracy, feed_dict={X: test_x, Y: test_y}))
+        accuracy_history.sort(key = sortFirt , reverse= True)
+        print("best Accuracy: ",accuracy_history[0])
+        import copy
+        tmp = copy.deepcopy(accuracy_history[0])
+        accuracy_history.clear()
+        return tmp
 
-        print("Accuracy history: ",accuracy_history)
+
 
 '''
 def main():
